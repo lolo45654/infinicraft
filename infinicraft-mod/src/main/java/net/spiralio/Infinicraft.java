@@ -219,28 +219,28 @@ public class Infinicraft implements ModInitializer {
       new BlockItem(INFINITUM_COLUMN, new FabricItemSettings())
     );
 
-    sdTalkerExecutor =
-      Executors.newCachedThreadPool(
-        new ThreadFactory() {
-          private static final AtomicInteger threadNumber = new AtomicInteger(
-            1
-          );
-
-          @Override
-          public Thread newThread(@NotNull Runnable r) {
-            Thread t = new Thread(
-              r,
-              "Infinicraft SD-API Thread Pool #" +
-              threadNumber.getAndIncrement()
-            );
-            t.setDaemon(false);
-            t.setPriority(Thread.MIN_PRIORITY);
-            return t;
-          }
-        }
-      );
-
     ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+      sdTalkerExecutor =
+              Executors.newCachedThreadPool(
+                      new ThreadFactory() {
+                        private static final AtomicInteger threadNumber = new AtomicInteger(
+                                1
+                        );
+
+                        @Override
+                        public Thread newThread(@NotNull Runnable r) {
+                          Thread t = new Thread(
+                                  r,
+                                  "Infinicraft SD-API Thread Pool #" +
+                                          threadNumber.getAndIncrement()
+                          );
+                          t.setDaemon(false);
+                          t.setPriority(Thread.MIN_PRIORITY);
+                          return t;
+                        }
+                      }
+              );
+
       sdTalkerExecutor.execute(() -> {
         LOGGER.info("Starting infinicraft backend server daemon");
 
@@ -307,6 +307,11 @@ public class Infinicraft implements ModInitializer {
 
     ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
       LOGGER.info("Shutting down infinicraft backend server daemon");
+      if (sdTalkerExecutor == null) {
+        LOGGER.warn("Infinicraft backend server is nonexistant. This shouldn't happen!");
+        return;
+      }
+
       try {
         //noinspection ResultOfMethodCallIgnored
         sdTalkerExecutor.awaitTermination(2, TimeUnit.SECONDS);
